@@ -1,6 +1,6 @@
 import numpy as np
-from sklearn.metrics import precision_score
-from sklearn.model_selection import TimeSeriesSplit, cross_val_score
+from sklearn.metrics import precision_score, recall_score
+from sklearn.model_selection import TimeSeriesSplit, cross_val_score, cross_validate
 from functools import partial
 
 
@@ -71,7 +71,10 @@ class CrossValidateTS:
             The mean score of the cross-validation.
         """
         cvts = TimeSeriesSplit(n_splits=splits)
-        return np.mean(cross_val_score(model, X, y, cv=cvts, scoring=partial(CrossValidateTS.prediction_scorer_threshold, threshold=threshold)))
+        output = cross_validate(model, X, y, cv=cvts, scoring={"Precision": partial(CrossValidateTS.prediction_scorer_threshold, threshold=threshold),
+                                                            "Recall": partial(CrossValidateTS.prediction_scorer_threshold, threshold=threshold, scoring=recall_score)})
+
+        return np.mean(output["test_Precision"]), np.mean(output["test_Recall"])
     
 
     @staticmethod
@@ -107,7 +110,10 @@ class CrossValidateTS:
         """
         splits = (len(X)-max_train_size)//test_size
         cvts = TimeSeriesSplit(n_splits=splits, max_train_size=max_train_size, test_size=test_size)
-        return np.nanmean(cross_val_score(model, X, y, cv=cvts, scoring=partial(CrossValidateTS.prediction_scorer_threshold, threshold=threshold)))
+        output = cross_validate(model, X, y, cv=cvts, scoring={"Precision": partial(CrossValidateTS.prediction_scorer_threshold, threshold=threshold),
+                                                            "Recall": partial(CrossValidateTS.prediction_scorer_threshold, threshold=threshold, scoring=recall_score)})
+
+        return np.mean(output["test_Precision"]), np.mean(output["test_Recall"])
     
 
     @staticmethod
@@ -151,3 +157,64 @@ class CrossValidateTS:
             y_pred.append(y_prob > threshold)
             y_test.append(y[test_id])
         return np.ravel(np.array(y_test)), np.ravel(np.array(y_pred))
+    
+
+    @staticmethod
+    def cross_validate_rts_na(model: object, X: np.array, y: np.array, threshold: float = 0.6, n_days: int = 150):
+        """
+        Creates a Real-Time-Scenario backtesting cross-validation that is NON ANCHORED (ROLLING). 
+        Training the model with the training set and predicting the test set of 1 observation.
+
+        Parameters
+        ----------
+        model : object
+            The machine learning model to be used for training and prediction.
+
+        X : np.array
+            The input features for training and prediction.
+
+        y : np.array
+            The target variable for training and prediction.
+
+        threshold : float, optional
+            The threshold value for classification. Default is 0.6.
+
+        n_Days : int, optional
+            The size of the simulation. Default is 150.
+
+        Returns
+        -------
+        y_test : np.array
+            The actual target values for the test set.
+
+        y_pred : np.array
+            The predicted target values for the test set.
+        """
+        cv = TimeSeriesSplit(max_train_size=500, test_size=1, n_splits=n_days)
+        y_test = []
+        y_pred = []
+        for train_id, test_id in cv.split(X):
+            model.fit(X[train_id], y[train_id])
+            y_prob = model.predict_proba(X[test_id])[:,1]
+            y_pred.append(y_prob > threshold)
+            y_test.append(y[test_id])
+        return np.ravel(np.array(y_test)), np.ravel(np.array(y_pred))
+    
+    
+    @staticmethod
+    def find_best_threshold(model, X: np.ndarray, y: np.ndarray, min_threshold: float = 0.5, max_threshold: float = 0.6, step: float = 0.01,
+                                                             awf_splits: int = 5, rwf_max_train_size: int = 500, rwf_test_size: int = 100) -> None:
+        """
+        Prints the model performance with both - anchored and rolling walking forward CVs, for different thresholds.
+        """
+        
+        for thr in np.arange(min_threshold, max_threshold+step, step):
+            a_precision, a_recall = CrossValidateTS.check_model_awf(model, X, y, splits=awf_splits, threshold=thr)
+            r_precision, r_recall = CrossValidateTS.check_model_rwf(model, X, y, max_train_size=rwf_max_train_size, test_size=rwf_test_size, threshold=thr)
+            print(f"-*-*- THRESHOLD = {round(thr, 2)} -*-*-")
+            print(f"ANCHORED --- | PRECISION = {a_precision} | RECALL = {a_recall}")
+            print(f"ROLLING --- | PRECISION = {r_precision} | RECALL = {r_recall}")
+            print("\n\n")
+    
+
+    
