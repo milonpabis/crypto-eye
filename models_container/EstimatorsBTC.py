@@ -16,9 +16,11 @@ class EstimatorsBTC:
         
         # Estimators trained with the best hyperparameters found in the hyperparameter tuning process
         self.estimators = {
-            'GradientBoosting': GradientBoostingClassifier(learning_rate=0.04,
-                                                           max_depth=3,
-                                                           n_estimators=110),
+            'GradientBoosting': {"estimator": GradientBoostingClassifier(learning_rate=0.06,
+                                                                         max_depth=4,
+                                                                         n_estimators=70),
+                                 "threshold": 0.55,
+                                      "type": "anchored"},
 
             'RandomForest': {"estimator": RandomForestClassifier(bootstrap=False,
                                                                  max_depth=6,
@@ -26,8 +28,9 @@ class EstimatorsBTC:
                              "threshold": 0.53,
                                   "type": "anchored"},
 
-            'AdaBoost': {"estimator": AdaBoostClassifier(learning_rate=1, 
-                                           n_estimators=500),
+            'AdaBoost': {"estimator": AdaBoostClassifier(algorithm="SAMME",
+                                                         learning_rate=1, 
+                                                         n_estimators=500),
                          "threshold": 0.5,
                               "type": "anchored"},
 
@@ -41,7 +44,7 @@ class EstimatorsBTC:
 
         # Initial performances measured with the best hyperparameters found in the hyperparameter tuning process (Real-Time-Scenario CV)
         self.performances = {
-            'GradientBoosting': {"recall": 0.4, "precision": 0.89},
+            'GradientBoosting': {"recall": 0.23, "precision": 0.53},
             'RandomForest': {"recall": 0.18, "precision": 0.56},
             'AdaBoost': {"recall": 0.49, "precision": 0.62},
             'SVC': {"recall": 0.39, "precision": 0.51},
