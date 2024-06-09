@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from typing import List
 
 
 class FeatureGenerator:
@@ -13,35 +14,69 @@ class FeatureGenerator:
         rs = gain / loss
         rsi = 100 - (100 / (1 + rs))
         return rsi
+    
+
+    @staticmethod
+    def MACD_hist(data: pd.Series) -> pd.Series:
+        EMA12 = data.ewm(span=12, adjust=False).mean()
+        EMA26 = data.ewm(span=26, adjust=False).mean()
+        
+        MACD = EMA12 - EMA26
+        signal_line = MACD.ewm(span=9, adjust=False).mean()
+
+        MACD_HIST = MACD - signal_line
+        MAX_MACD = MACD_HIST.max()
+        MIN_MACD = MACD_HIST.min()
+
+        # I also return the MAX_MACD and MIN_MACD for the training data in order to deal with extrapolation on test data
+        return MACD_HIST, MAX_MACD, MIN_MACD
+    
+
+    @staticmethod
+    def CCI(high: pd.Series, low: pd.Series, close: pd.Series, window: int = 20) -> pd.Series:
+        TP = (high + low + close) / 3
+        MA = TP.rolling(window=window).mean()
+        
+        CCI = ((TP - MA) / (0.015 * np.mean(np.absolute(TP - np.mean(TP)))))
+        return CCI
+    
+
+    @staticmethod
+    def stochastic_oscilator(data: pd.Series, window: int = 14) -> pd.Series:
+        last_x_max = data.rolling(window).max()
+        last_x_min = data.rolling(window).min()
+
+        return 100 * (data - last_x_min) / (last_x_max - last_x_min)
 
 
     @staticmethod
-    def generate_features(data: pd.DataFrame, target: str, output_name: str = "Growth") -> pd.DataFrame:
-        features = ["Open", "Close", "Volume", "1D", "30D", "200DA", "200DEA", "3RSI", "7RSI", "14RSI", "30RSI", "50RSI", "200RSI"]
-        return_data = data.copy()
-        past_prices_values = [1, 30]
-        MA_values = [200]
-        RSI_values = [3, 7, 14, 30, 50, 200]
+    def generate_features(data: pd.DataFrame, features: List[str], HLC_targets: List[str] = ["High", "Low", "Close"],  output_name: str = "Growth") -> pd.DataFrame:
+        RSI_windows = [5, 7, 14, 20]
+        CCI_windows = [3, 5, 7, 14, 20]
+        SO_windows = [7, 14]
 
-        for pp in past_prices_values:
-             # PAST PRICES
-             return_data[f"{pp}D"] = return_data[target].shift(pp)
 
-        for window in MA_values:
-            # MOVING AVERAGE
-            return_data[f"{window}DA"] = return_data[target].rolling(window=window).mean()
+        for window in RSI_windows:
+            data[f"RSI{window}"] = FeatureGenerator.RSI(data[HLC_targets[2]], window=window)
 
-            # EXPONENTIAL MOVING AVERAGE
-            return_data[f"{window}DEA"] = return_data[target].ewm(span=window, adjust=False).mean()
+        for window in CCI_windows:
+            data[f"CCI{window}"] = FeatureGenerator.CCI(data[HLC_targets[0]], data[HLC_targets[1]], data[HLC_targets[2]], window=window)
 
-        for window in RSI_values:
-            return_data[f"{window}RSI"] = FeatureGenerator.RSI(return_data[target].copy(), window=window)
+        for window in SO_windows:
+            data[f"SO{window}"] = FeatureGenerator.stochastic_oscilator(data[HLC_targets[2]], window=window)
+            data[f"SOMA3{window}"] = data[f"SO{window}"].rolling(3).mean()
 
-        
-        return_data[output_name] = (return_data[target] > return_data["1D"]).astype(int)
-        return_data.dropna(inplace=True)
-        
-        return return_data[features].values, return_data[output_name].values
+        data["MACD"] = FeatureGenerator.MACD_hist(data[HLC_targets[2]])[0]
+
+        # TARGET VARIABLE
+        data[output_name] = (data[HLC_targets[2]] < data[HLC_targets[2]].shift(-1)).astype(int)
+
+        data.dropna(inplace=True)
+
+               # X_train                           y_train                                            X_today
+        return data[features].iloc[:-1, :].values, np.ravel(data[[output_name]].iloc[:-1, :].values), np.atleast_2d(data[features].iloc[-1, :].values)
+
+
 
         
 

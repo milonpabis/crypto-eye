@@ -13,56 +13,47 @@ class EstimatorsBTC:
 
         self.X: np.ndarray
         self.y: np.ndarray
+        self.Xtoday: np.ndarray
+
+        self.features = ["RSI5", "RSI7", "RSI14", "RSI20", "CCI3", "CCI5", "CCI7", "CCI14", "CCI20", "SOMA37", "SOMA314", "MACD"]
         
         # Estimators trained with the best hyperparameters found in the hyperparameter tuning process
         self.estimators = {
-            'GradientBoosting': {"estimator": GradientBoostingClassifier(learning_rate=0.06,
-                                                                         max_depth=4,
-                                                                         n_estimators=70),
-                                 "threshold": 0.55,
+            'GradientBoost': {"estimator": GradientBoostingClassifier(learning_rate=0.1,
+                                                                         max_depth=3,
+                                                                         n_estimators=100),
+                                 "threshold": 0.53,
                                       "type": "anchored"},
 
             'RandomForest': {"estimator": RandomForestClassifier(bootstrap=False,
-                                                                 max_depth=6,
-                                                                 n_estimators=100), 
-                             "threshold": 0.53,
+                                                                 max_depth=21,
+                                                                 n_estimators=160), 
+                             "threshold": 0.55,
                                   "type": "anchored"},
 
-            'AdaBoost': {"estimator": AdaBoostClassifier(algorithm="SAMME",
-                                                         learning_rate=1, 
-                                                         n_estimators=500),
-                         "threshold": 0.5,
+            'AdaBoost': {"estimator": AdaBoostClassifier(algorithm="SAMME"),
+                         "threshold": 0.52,
                               "type": "anchored"},
-
-            'SVC': {"estimator": SVC(kernel="rbf",
-                                     C=5,
-                                     gamma=1,
-                                     probability=True),
-                    "threshold": 0.52,
-                         "type": "anchored"}
         }
 
         # Initial performances measured with the best hyperparameters found in the hyperparameter tuning process (Real-Time-Scenario CV)
         self.performances = {
-            'GradientBoosting': {"recall": 0.23, "precision": 0.53},
-            'RandomForest': {"recall": 0.18, "precision": 0.56},
-            'AdaBoost': {"recall": 0.49, "precision": 0.62},
-            'SVC': {"recall": 0.39, "precision": 0.51},
+            'GradientBoost': {"recall": 0.51, "precision": 0.65},
+            'RandomForest': {"recall": 0.45, "precision": 0.63},
+            'AdaBoost': {"recall": 0.76, "precision": 0.64}
         }
 
 
-    def _fit_estimators(self) -> None:
-        pass
+        self._load_data()
 
 
     def _load_data(self) -> None:
         bitcoin = yf.Ticker("BTC-USD")
         data = bitcoin.history(period="max")
-        self.X, self.y = FeatureGenerator.generate_features(data, "Close")
+        self.X, self.y, self.today = FeatureGenerator.generate_features(data, HLC_targets=["High", "Low", "Close"], features=self.features, output_name="Growth")
 
 
-    def _fit_models(self) -> None:
-        
+    def _fit_estimators(self) -> None:
         for est in self.estimators:
             self.estimators[est].fit(self.X, self.y)
             print(f"{est} fitted")
