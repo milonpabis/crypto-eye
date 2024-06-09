@@ -45,6 +45,7 @@ class EstimatorsBTC:
 
 
         self._load_data()
+        self._fit_estimators()
 
 
     def _load_data(self) -> None:
@@ -55,8 +56,14 @@ class EstimatorsBTC:
 
     def _fit_estimators(self) -> None:
         for est in self.estimators:
-            self.estimators[est].fit(self.X, self.y)
+            self.estimators[est]["estimator"].fit(self.X, self.y)
             print(f"{est} fitted")
+
+    
+    def predict_today(self) -> None:
+        for est in self.estimators:
+            y_prob = self.estimators[est]["estimator"].predict_proba(self.today)[:,1]
+            print(f"{est} predicted: {y_prob > self.estimators[est]['threshold']}")
 
         
 

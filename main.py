@@ -5,6 +5,6 @@ if __name__ == "__main__":
     print("--------- Loading and preprocessing data ---------")
     start = dt.datetime.now()
     btc = EstimatorsBTC()
-    btc._load_data()
+    btc.predict_today()
     end = dt.datetime.now()
     print(f"--------- Time taken: {end-start} ---------")
