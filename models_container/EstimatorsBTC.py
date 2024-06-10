@@ -14,6 +14,8 @@ DATE_FORMAT = r"%Y-%m-%d"
 
 class EstimatorsBTC:
 
+
+
     def __init__(self):
 
         self.X: np.ndarray
@@ -51,28 +53,10 @@ class EstimatorsBTC:
         }
 
         if not DEBUG:
-            self._initialize_estimators(go_back=0)
-
-
-    def _load_data(self, max_date: str = datetime.now().strftime(DATE_FORMAT), retrieve: bool = False) -> Optional[tuple]:
-        bitcoin = yf.Ticker("BTC-USD")
-        data = bitcoin.history(start=None, end=max_date, period="max")
-        X, y, Xtoday = FeatureGenerator.generate_features(data, HLC_targets=["High", "Low", "Close"], features=self.features, output_name="Growth")
-
-        self.X = X.values
-        self.y = np.ravel(y.values)
-        self.Xtoday = np.atleast_2d(Xtoday.values)
-        if retrieve:
-            return X, y, Xtoday
+            self.__initialize_estimators(go_back=0)
 
 
 
-    def _fit_estimators(self) -> None:
-        for est in self.estimators:
-            self.estimators[est]["estimator"].fit(self.X, self.y)
-            print(f"{est} fitted")
-
-    
     def predict_today(self) -> dict:
         results = {}
         for est in self.estimators:
@@ -82,10 +66,6 @@ class EstimatorsBTC:
             results[est] = y_pred
         return results
 
-
-    def _initialize_estimators(self, max_date: str = datetime.now().strftime(DATE_FORMAT)) -> None:
-        self._load_data(max_date=max_date)
-        self._fit_estimators()
 
     
     def update_performance(self, days_back: int = 150) -> None:
@@ -106,12 +86,21 @@ class EstimatorsBTC:
         
         for date in missing_dates:
             print(f"""Evaluating date: {date}""")
-            self._initialize_estimators(max_date=date)
+            self.__initialize_estimators(max_date=date)
             res = self.predict_today()
             for est in res:
                 self.modelDB.insert_model_prediction(est, date, res[est])
 
         self.fill_real_predictions(today150, today)
+
+
+    
+    def calculate_performance(self, estimator: str) -> None:
+        data = self.modelDB.get_model_predictions(estimator)
+        data = data.sort_values(by="date", ascending=True)
+        print(data.head(5))
+        print(data.tail(5))
+
 
 
     def fill_real_predictions(self, start_date: str, end_date: str) -> None:
@@ -125,8 +114,37 @@ class EstimatorsBTC:
         _, y, _ = self._load_data(retrieve=True)
 
         for date in dates:
-            y_true = y[y.index == date].values[0][0]
-            self.modelDB.insert_real_value(y_true=y_true, date=date)
+            try:
+                y_true = y[y.index == date].values[0][0]
+                self.modelDB.insert_real_value(y_true=y_true, date=date)
+            except:
+                print("Skipped date: ", date)
+
+
+
+    def __initialize_estimators(self, max_date: str = datetime.now().strftime(DATE_FORMAT)) -> None:
+        self.__load_data(max_date=max_date)
+        self.__fit_estimators()
+
+
+
+    def __load_data(self, max_date: str = None, retrieve: bool = False) -> Optional[tuple]:
+        bitcoin = yf.Ticker("BTC-USD")
+        data = bitcoin.history(start=None, end=max_date, period="max")
+        X, y, Xtoday = FeatureGenerator.generate_features(data, HLC_targets=["High", "Low", "Close"], features=self.features, output_name="Growth")
+
+        self.X = X.values
+        self.y = np.ravel(y.values)
+        self.Xtoday = np.atleast_2d(Xtoday.values)
+        if retrieve:
+            return X, y, Xtoday
+        
+
+
+    def __fit_estimators(self) -> None:
+        for est in self.estimators:
+            self.estimators[est]["estimator"].fit(self.X, self.y)
+            print(f"{est} fitted")
 
         
             
