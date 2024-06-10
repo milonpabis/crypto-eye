@@ -129,7 +129,7 @@ class FeatureGenerator:
         data.dropna(inplace=True)
 
                # X_train                           y_train                                            X_today
-        return data[features].iloc[:-1, :].values, np.ravel(data[[output_name]].iloc[:-1, :].values), np.atleast_2d(data[features].iloc[-1, :].values)
+        return data[features].iloc[:-1, :], data[[output_name]].iloc[:-1, :], data[features].iloc[-1, :]
 
 
 
