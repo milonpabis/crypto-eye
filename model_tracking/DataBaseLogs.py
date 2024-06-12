@@ -59,10 +59,13 @@ class DBLogs:
     
 
     def insert_real_value(self, date: str, y_true: int) -> None:
-        self.cursor.execute("""
-            UPDATE models_predictions SET y_true = ? WHERE date = ?;""", 
-            (int(y_true), date))
-        self.conn.commit()
+        """Inserts the real value into the database."""
+        try:
+            self.cursor.execute("""UPDATE models_predictions SET y_true = ? WHERE date = ?;""", 
+                (int(y_true), date))
+            self.conn.commit()
+        except Exception as exception_error:
+            print(exception_error)
 
 
 
@@ -78,11 +81,14 @@ class DBLogs:
 
 
 
-    def get_missing_dates(self, start_date: str, end_date: str, difference: bool = True) -> pd.DataFrame:
+    def get_missing_dates_predictions(self, start_date: str, end_date: str, difference: bool = True) -> pd.DataFrame:
         """Returns the dates that are missing the predictions value."""
         try:
-            self.cursor.execute("""SELECT DISTINCT date FROM models_predictions WHERE date BETWEEN ? AND ? AND y_pred IS NOT NULL;""",
-                                (start_date, end_date))
+            if all([start_date, end_date]):
+                self.cursor.execute("""SELECT DISTINCT date FROM models_predictions WHERE date BETWEEN ? AND ? AND y_pred IS NOT NULL;""",
+                                    (start_date, end_date))
+            else:
+                self.cursor.execute("""SELECT DISTINCT date FROM models_predictions WHERE y_true IS NULL;""")
             existing_dates = pd.DataFrame(self.cursor.fetchall(), columns=["date"]).astype("datetime64[s]")
 
             if difference:
