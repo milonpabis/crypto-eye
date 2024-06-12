@@ -102,14 +102,18 @@ class EstimatorsBTC:
 
 
     
-    def calculate_performance(self, estimator: str) -> None:
+    def update_performance(self, estimator: str) -> None:
         data = self.modelDB.get_model_predictions(estimator) # getting the predictions from the database
 
-        data = data.sort_values(by="date", ascending=True) # sorting the data by date
-        date150 = data["date"].iloc[149] # getting the date that thresholds the first 150 days
-        date_range = pd.date_range(start=date150, end=datetime.now().strftime(DATE_FORMAT), inclusive="both").astype(str)
+        data = data.sort_values(by="date", ascending=True).dropna() # sorting the data by date
 
-        for d in date_range[:-1]:   # rolling window
+        missing_dates = self.modelDB.get_missing_dates_performance(estimator) # getting the missing performance dates for the estimator
+
+        date150 = data["date"].iloc[149] # getting the date that thresholds the first 150 days
+        date_range = np.ravel(missing_dates[missing_dates["date"] >= date150].values) # getting the missing dates that are after the date150
+
+        for d in date_range:   # rolling window
+            print(d)
             values150 = data[data["date"] <= d][["y_true", "y_pred"]].dropna().values # getting the values from before the date d
             # calculating metrics
             precision = precision_score(values150[:,0], values150[:,1])

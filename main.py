@@ -1,5 +1,6 @@
 from models_container.EstimatorsBTC import EstimatorsBTC
 import datetime as dt
+import matplotlib.pyplot as plt
 
 DEBUG = False
 est = ["RandomForest", "AdaBoost", "GradientBoost"]
@@ -12,8 +13,11 @@ if __name__ == "__main__":
         start = dt.datetime.now()
         btc = EstimatorsBTC()
         #btc.update_predictions(days_back=250)
-        for e in est:
-            btc.calculate_performance(e)
+        for model in est:
+            dat = btc.modelDB.get_model_performance(model)
+            dat.plot(x="date", y=["recall", "precision"], figsize=(10, 5))
+        plt.show()
+        #print(btc.modelDB.get_missing_dates_performance("RandomForest"))
         #btc.calculate_performance("RandomForest")
         #btc.calculate_performance("AdaBoost")
         #btc.calculate_performance("GradientBoost")

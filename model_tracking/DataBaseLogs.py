@@ -85,10 +85,15 @@ class DBLogs:
         """Returns the dates that are missing the predictions value."""
         try:
             if all([start_date, end_date]):
-                self.cursor.execute("""SELECT DISTINCT date FROM models_predictions WHERE date BETWEEN ? AND ? AND y_pred IS NOT NULL;""",
+                self.cursor.execute("""SELECT DISTINCT date 
+                                       FROM models_predictions 
+                                       WHERE date BETWEEN ? AND ? AND y_pred IS NOT NULL;""",
                                     (start_date, end_date))
             else:
-                self.cursor.execute("""SELECT DISTINCT date FROM models_predictions WHERE y_true IS NULL;""")
+                self.cursor.execute("""SELECT DISTINCT date 
+                                       FROM models_predictions 
+                                       WHERE y_true IS NULL;""")
+                
             existing_dates = pd.DataFrame(self.cursor.fetchall(), columns=["date"]).astype("datetime64[s]")
 
             if difference:
@@ -97,9 +102,26 @@ class DBLogs:
                 return missing_dates.values
             
             return existing_dates["date"].astype(str).str.split("T").str[0].values
+        
         except Exception as exception_error:
             print(exception_error)
             return None
+        
+
+
+    def get_missing_dates_performance(self, model_name: str) -> pd.DataFrame:
+        model_id = self.get_model_id(model_name)
+        self.cursor.execute("""
+                            SELECT DISTINCT date 
+                            FROM models_predictions
+                            WHERE date NOT IN(
+                                SELECT DISTINCT date
+                                FROM models_performance
+                                WHERE model_id = ?)
+                            AND y_true IS NOT NULL;
+                            """, (model_id,))
+        
+        return pd.DataFrame(self.cursor.fetchall(), columns=["date"])
         
     
 
@@ -120,8 +142,8 @@ class DBLogs:
                                 date TEXT NOT NULL,
                                 recall REAL NOT NULL,
                                 precision REAL NOT NULL,
-                                FOREIGN KEY (model_id) REFERENCES models (id));
-                            """)
+                                FOREIGN KEY (model_id) REFERENCES models (id),
+                                UNIQUE (model_id, date));""")
         
         self.cursor.execute("""
                             CREATE TABLE IF NOT EXISTS models_predictions (
@@ -130,7 +152,8 @@ class DBLogs:
                                 date TEXT NOT NULL,
                                 y_true INTEGER,
                                 y_pred INTEGER NOT NULL,
-                                FOREIGN KEY (model_id) REFERENCES models (id));
+                                FOREIGN KEY (model_id) REFERENCES models (id),
+                                UNIQUE (model_id, date));
                             """)
         
         self.conn.commit()
@@ -139,16 +162,20 @@ class DBLogs:
 
     def get_model_id(self, model_name: str) -> int:
         self.cursor.execute("""
-                            SELECT id FROM models WHERE model_name = ?;
+                            SELECT id 
+                            FROM models WHERE model_name = ?;
                             """, (model_name,))
+        
         return self.cursor.fetchone()[0]
     
 
 
     def get_model_name(self, model_id: int) -> str:
         self.cursor.execute("""
-                            SELECT model_name FROM models WHERE id = ?;
+                            SELECT model_name 
+                            FROM models WHERE id = ?;
                             """, (model_id,))
+        
         return self.cursor.fetchone()[0]
     
 
@@ -157,6 +184,7 @@ class DBLogs:
         self.cursor.execute("""
             INSERT INTO models_predictions (model_id, date, y_true, y_pred) VALUES (?, ?, NULL, ?);""", 
             (model_id, date, y_pred))
+        
         self.conn.commit()
     
 
@@ -165,21 +193,28 @@ class DBLogs:
         self.cursor.execute("""
             INSERT INTO models_performance (model_id, date, recall, precision) VALUES (?, ?, ?, ?);""", 
             (model_id, date, recall, precision))
+        
         self.conn.commit()
     
 
 
     def __get_model_predictions_id(self, model_id: int) -> pd.DataFrame:
         self.cursor.execute("""
-                            SELECT date, y_true, y_pred FROM models_predictions WHERE model_id = ?;
+                            SELECT date, y_true, y_pred 
+                            FROM models_predictions 
+                            WHERE model_id = ?;
                             """, (model_id,))
+        
         return pd.DataFrame(self.cursor.fetchall(), columns=["date", "y_true", "y_pred"])
     
 
     def __get_model_performance_id(self, model_id: int) -> pd.DataFrame:
         self.cursor.execute("""
-                            SELECT date, recall, precision FROM models_performance WHERE model_id = ?;
+                            SELECT date, recall, precision 
+                            FROM models_performance 
+                            WHERE model_id = ?;
                             """, (model_id,))
+        
         return pd.DataFrame(self.cursor.fetchall(), columns=["date", "recall", "precision"])
     
 
