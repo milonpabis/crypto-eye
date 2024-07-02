@@ -4,12 +4,12 @@ from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier,
 from sklearn.metrics import recall_score, precision_score
 import yfinance as yf
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from feature_generator.FeatureGenerator import FeatureGenerator
 from model_tracking.DataBaseLogs import DBLogs
 
-DEBUG = True
+DEBUG = False
 DATE_FORMAT = r"%Y-%m-%d"
 
 
@@ -54,10 +54,12 @@ class EstimatorsBTC:
         }
 
         if not DEBUG:
-            self.__initialize_estimators()
-            res = self.predict_today()
-            for est in res:
-                self.modelDB.insert_model_prediction(est, datetime.now().strftime(DATE_FORMAT), res[est])
+            today_date = datetime.now().strftime(DATE_FORMAT)
+            if not self.modelDB.does_prediction_exists(today_date):
+                self.__initialize_estimators()
+                res = self.predict_today()
+                for est in res:
+                    self.modelDB.insert_model_prediction(est, datetime.now().strftime(DATE_FORMAT), res[est])
             self.fill_real_predictions(start_date=None, end_date=None)
 
 

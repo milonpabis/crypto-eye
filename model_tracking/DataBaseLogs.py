@@ -21,6 +21,17 @@ class DBLogs:
         except Exception as exception_error:
             print(exception_error)
             return None
+        
+
+    def get_model_prediction_date(self, model_name: str, date: str) -> int:
+        """Returns the prediction value for a given date."""
+        try:
+            model_id = self.get_model_id(model_name)
+            return self.__get_model_prediction_id_date(model_id, date)
+        
+        except Exception as exception_error:
+            print(exception_error)
+            return None
     
 
 
@@ -29,6 +40,17 @@ class DBLogs:
         try:
             model_id = self.get_model_id(model_name)
             return self.__get_model_performance_id(model_id)
+        
+        except Exception as exception_error:
+            print(exception_error)
+            return None
+        
+    
+    def get_model_performance_date(self, model_name: str, date: str) -> int:
+        """Returns the performance values for a given date."""
+        try:
+            model_id = self.get_model_id(model_name)
+            return self.__get_model_performance_id_date(model_id, date)
         
         except Exception as exception_error:
             print(exception_error)
@@ -179,6 +201,11 @@ class DBLogs:
         return self.cursor.fetchone()[0]
     
 
+    def does_prediction_exists(self, date: str) -> bool:
+        self.cursor.execute("""SELECT EXISTS(SELECT 1 FROM models_predictions WHERE date = ?);""", (date,))
+        return self.cursor.fetchone()[0]
+    
+
 
     def __insert_prediction_id(self, model_id: int, date: str, y_pred: int) -> None:
         self.cursor.execute("""
@@ -206,6 +233,24 @@ class DBLogs:
                             """, (model_id,))
         
         return pd.DataFrame(self.cursor.fetchall(), columns=["date", "y_true", "y_pred"])
+    
+
+    def __get_model_prediction_id_date(self, model_id: int, date: str) -> int:
+        self.cursor.execute("""
+                            SELECT y_pred
+                            FROM models_predictions
+                            WHERE model_id = ? AND date = ?;
+                            """, (model_id, date))
+        return self.cursor.fetchone()[0]
+    
+
+    def __get_model_performance_id_date(self, model_id: int, date: str) -> int:
+        self.cursor.execute("""
+                            SELECT recall, precision
+                            FROM models_performance
+                            WHERE model_id = ? AND date = ?;
+                            """, (model_id, date))
+        return self.cursor.fetchone()[0]
     
 
     def __get_model_performance_id(self, model_id: int) -> pd.DataFrame:
