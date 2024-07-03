@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import pandas as pd
+from model_tracking.performance_data import PerformanceWindows, PerformanceBatch
 
 
 class DBLogs:
@@ -55,6 +56,9 @@ class DBLogs:
         except Exception as exception_error:
             print(exception_error)
             return None
+        
+
+    def update_model_performance(self, model_name: str, date: str, )
     
     
 
@@ -162,8 +166,31 @@ class DBLogs:
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 model_id INTEGER NOT NULL,
                                 date TEXT NOT NULL,
-                                recall REAL NOT NULL,
-                                precision REAL NOT NULL,
+                            
+                                recall_total REAL NOT NULL,
+                                precision_total REAL NOT NULL,
+                                accuracy_total REAL NOT NULL,
+                                specificity_total REAL NOT NULL,
+                                neg_pred_value_total REAL NOT NULL,
+                            
+                                recall_7 REAL NOT NULL,
+                                precision_7 REAL NOT NULL,
+                                accuracy_7 REAL NOT NULL,
+                                specificity_7 REAL NOT NULL,
+                                neg_pred_value_7 REAL NOT NULL,
+                            
+                                recall_14 REAL NOT NULL,
+                                precision_14 REAL NOT NULL,
+                                accuracy_14 REAL NOT NULL,
+                                specificity_14 REAL NOT NULL,
+                                neg_pred_value_14 REAL NOT NULL,
+                            
+                                recall_30 REAL NOT NULL,
+                                precision_30 REAL NOT NULL,
+                                accuracy_30 REAL NOT NULL,
+                                specificity_30 REAL NOT NULL,
+                                neg_pred_value_30 REAL NOT NULL,
+
                                 FOREIGN KEY (model_id) REFERENCES models (id),
                                 UNIQUE (model_id, date));""")
         
@@ -201,9 +228,17 @@ class DBLogs:
         return self.cursor.fetchone()[0]
     
 
+
     def does_prediction_exists(self, date: str) -> bool:
         self.cursor.execute("""SELECT EXISTS(SELECT 1 FROM models_predictions WHERE date = ?);""", (date,))
         return self.cursor.fetchone()[0]
+    
+
+
+    def get_null_performance_dates(self, estimator: str) -> list:
+        model_id = self.get_model_id(estimator)
+        self.cursor.execute("""SELECT date FROM models_performance WHERE recall_7 = 0.0 AND model_id = ?;""", (model_id,))
+        return list(map(lambda date: date[0], self.cursor.fetchall()))
     
 
 
@@ -218,7 +253,7 @@ class DBLogs:
 
     def __insert_performance_id(self, model_id: int, date: str, recall: float, precision: float) -> None:
         self.cursor.execute("""
-            INSERT INTO models_performance (model_id, date, recall, precision) VALUES (?, ?, ?, ?);""", 
+            INSERT INTO models_performance (model_id, date, recall_total, precision_total) VALUES (?, ?, ?, ?);""", 
             (model_id, date, recall, precision))
         
         self.conn.commit()
@@ -246,7 +281,7 @@ class DBLogs:
 
     def __get_model_performance_id_date(self, model_id: int, date: str) -> int:
         self.cursor.execute("""
-                            SELECT recall, precision
+                            SELECT recall_total, precision_total
                             FROM models_performance
                             WHERE model_id = ? AND date = ?;
                             """, (model_id, date))
@@ -255,12 +290,12 @@ class DBLogs:
 
     def __get_model_performance_id(self, model_id: int) -> pd.DataFrame:
         self.cursor.execute("""
-                            SELECT date, recall, precision 
+                            SELECT date, recall_total, precision_total 
                             FROM models_performance 
                             WHERE model_id = ?;
                             """, (model_id,))
         
-        return pd.DataFrame(self.cursor.fetchall(), columns=["date", "recall", "precision"])
+        return pd.DataFrame(self.cursor.fetchall(), columns=["date", "recall_total", "precision_total"])
     
 
 

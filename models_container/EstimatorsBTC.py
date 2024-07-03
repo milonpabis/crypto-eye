@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, AdaBoostClassifier
-from sklearn.metrics import recall_score, precision_score
+from sklearn.metrics import recall_score, precision_score, accuracy_score, ne
 import yfinance as yf
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
@@ -108,6 +108,7 @@ class EstimatorsBTC:
         data = self.modelDB.get_model_predictions(estimator) # getting the predictions from the database
 
         data = data.sort_values(by="date", ascending=True).dropna() # sorting the data by date
+        
 
         missing_dates = self.modelDB.get_missing_dates_performance(estimator) # getting the missing performance dates for the estimator
 
@@ -115,12 +116,51 @@ class EstimatorsBTC:
         date_range = np.ravel(missing_dates[missing_dates["date"] >= date150].values) # getting the missing dates that are after the date150
 
         for d in date_range:   # rolling window
-            print(d)
             values150 = data[data["date"] <= d][["y_true", "y_pred"]].dropna().values # getting the values from before the date d
             # calculating metrics
-            precision = precision_score(values150[:,0], values150[:,1])
-            recall = recall_score(values150[:,0], values150[:,1])
-            self.modelDB.insert_model_performance(estimator, d, recall, precision)  # adding the performance to the database
+            precision_total = precision_score(values150[:,0], values150[:,1])
+            recall_total = recall_score(values150[:,0], values150[:,1])
+            self.modelDB.insert_model_performance(estimator, d, recall_total, precision_total)  # adding the performance to the database
+
+        for d in self.modelDB.get_null_performance_dates(estimator):
+            current_date = datetime.strptime(d, DATE_FORMAT)
+
+            # 7
+            ago_7 = str(current_date - timedelta(days=7))
+            values7 = data[(data["date"] <= d) & (data["date"] >= ago_7)][["y_true", "y_pred"]].dropna().values
+            print("f", len(values7))
+            precision_7 = precision_score(values7[:,0], values7[:,1], zero_division=0)
+            recall_7 = recall_score(values7[:,0], values7[:,1])
+
+            # 14
+            ago_14 = str(current_date - timedelta(days=14))
+            values14 = data[(data["date"] <= d) & (data["date"] >= ago_14)][["y_true", "y_pred"]].dropna().values
+            precision_14 = precision_score(values14[:,0], values14[:,1], zero_division=0)
+            recall_14 = recall_score(values14[:,0], values14[:,1])
+
+            # 30
+            ago_30 = str(current_date - timedelta(days=30))
+            values30 = data[(data["date"] <= d) & (data["date"] >= ago_30)][["y_true", "y_pred"]].dropna().values
+            precision_30 = precision_score(values30[:,0], values30[:,1], zero_division=0)
+            recall_30 = recall_score(values30[:,0], values30[:,1])
+            
+            print(precision_7)
+
+
+
+    def calculate_performance_metrics(self, data: pd.DataFrame, window: int, current_date: datetime) -> list:
+        ago = str(current_date - timedelta(days=window))
+        values = data[(data["date"] <= str(current_date)) & (data["date"] >= ago)][["y_true", "y_pred"]].dropna().values
+
+        precision = precision_score(values[:,0], values[:,1], zero_division=0)
+        recall = recall_score(values[:,0], values[:,1])
+        accuracy = accuracy_score(values[:,0], values[:,1])
+        specificity = recall_score(values[:,0], values[:,1], pos_label=0)
+        neg_pred_value = precision_score(values[:,0], values[:,1], pos_label=0, zero_division=0)
+
+        return [precision, recall, accuracy, specificity, neg_pred_value]
+
+
 
 
 
@@ -142,6 +182,13 @@ class EstimatorsBTC:
             except:
                 print("Skipped date: ", date)   # it is going to skip the today's date (because we dont know the result yet),
                                                 # and the missing ones from yahoo finance
+
+
+
+
+
+
+
 
 
 
