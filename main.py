@@ -17,7 +17,8 @@ if __name__ == "__main__":
         #btc.update_performance("AdaBoost")
         #btc.update_performance("GradientBoost")
 
-        print(btc.predict_today())
+        print(btc.get_prediction_today())
+        print(btc.modelDB.get_model_performance("RandomForest").head())
         end = dt.datetime.now()
         print(f"--------- Time taken: {end-start} ---------")
 

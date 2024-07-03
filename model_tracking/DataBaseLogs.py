@@ -4,6 +4,7 @@ import pandas as pd
 from model_tracking.performance_data import PerformanceWindows, PerformanceBatch
 
 
+
 class DBLogs:
     def __init__(self, db_path: str = "model_tracking\\data\\logs.db"):
         self.db_path = db_path
@@ -24,6 +25,7 @@ class DBLogs:
             return None
         
 
+
     def get_model_prediction_date(self, model_name: str, date: str) -> int:
         """Returns the prediction value for a given date."""
         try:
@@ -41,17 +43,6 @@ class DBLogs:
         try:
             model_id = self.get_model_id(model_name)
             return self.__get_model_performance_id(model_id)
-        
-        except Exception as exception_error:
-            print(exception_error)
-            return None
-        
-    
-    def get_model_performance_date(self, model_name: str, date: str) -> int:
-        """Returns the performance values for a given date."""
-        try:
-            model_id = self.get_model_id(model_name)
-            return self.__get_model_performance_id_date(model_id, date)
         
         except Exception as exception_error:
             print(exception_error)
@@ -148,9 +139,6 @@ class DBLogs:
         
     
 
-
-
-
     def create_tables(self):
         self.cursor.execute("""
                             CREATE TABLE IF NOT EXISTS models (
@@ -232,7 +220,6 @@ class DBLogs:
     
     
 
-
     def __insert_prediction_id(self, model_id: int, date: str, y_pred: int) -> None:
         self.cursor.execute("""
             INSERT INTO models_predictions (model_id, date, y_true, y_pred) VALUES (?, ?, NULL, ?);""", 
@@ -274,29 +261,37 @@ class DBLogs:
                             """, (model_id, date))
         return self.cursor.fetchone()[0]
     
-
-    def __get_model_performance_id_date(self, model_id: int, date: str) -> int:
-        self.cursor.execute("""
-                            SELECT recall_total, precision_total
-                            FROM models_performance
-                            WHERE model_id = ? AND date = ?;
-                            """, (model_id, date))
-        return self.cursor.fetchone()[0]
     
 
     def __get_model_performance_id(self, model_id: int) -> pd.DataFrame:
         self.cursor.execute("""
-                            SELECT date, recall_total, precision_total 
-                            FROM models_performance 
-                            WHERE model_id = ?;
+                            SELECT mp.date, m.model_name, mp.recall_total, mp.precision_total, mp.accuracy_total, mp.specificity_total, mp.neg_pred_value_total,
+                                            mp.recall_7, mp.precision_7, mp.accuracy_7, mp.specificity_7, mp.neg_pred_value_7,
+                                            mp.recall_14, mp.precision_14, mp.accuracy_14, mp.specificity_14, mp.neg_pred_value_14,
+                                            mp.recall_30, mp.precision_30, mp.accuracy_30, mp.specificity_30, mp.neg_pred_value_30
+                            FROM models_performance mp
+                            JOIN models m
+                            ON m.id = mp.model_id
+                            WHERE mp.model_id = ?;
                             """, (model_id,))
         
-        return pd.DataFrame(self.cursor.fetchall(), columns=["date", "recall_total", "precision_total"])
+        return pd.DataFrame(self.cursor.fetchall(), columns=PERFORMANCE_COLUMNS)
     
 
 
     def close(self):
         self.conn.close()
+
+
+
+
+
+PERFORMANCE_COLUMNS = ["date", "model_name", "recall_total", "precision_total", "accuracy_total", "specificity_total", "neg_pred_value_total",
+                       "recall_7", "precision_7", "accuracy_7", "specificity_7", "neg_pred_value_7",
+                       "recall_14", "precision_14", "accuracy_14", "specificity_14", "neg_pred_value_14",
+                       "recall_30", "precision_30", "accuracy_30", "specificity_30", "neg_pred_value_30"]
+
+PREDICTION_COLUMNS = ["date", "y_true", "y_pred"]
 
 
 

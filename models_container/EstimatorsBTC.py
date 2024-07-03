@@ -68,7 +68,9 @@ class EstimatorsBTC:
         """
         Returns the predictions for today.
         """
-        return self.modelDB.get_predictions_today()
+        today = str(datetime.now().strftime(DATE_FORMAT))
+
+        return {est: self.modelDB.get_model_prediction_date(est, today) for est in self.estimators} # dictionary with the predictions for today
 
 
 
@@ -86,30 +88,32 @@ class EstimatorsBTC:
 
     
     def update_performance(self, estimator: str) -> None:
-        data = self.modelDB.get_model_predictions(estimator) # getting the predictions from the database
+            """Update the performance metrics for a given estimator. Starts with the 150th day and goes on for the missing days.
 
-        data = data.sort_values(by="date", ascending=True).dropna() # sorting the data by date
-        
+            Parameters:
+                estimator (str): The name of the estimator.
 
-        missing_dates = self.modelDB.get_missing_dates_performance(estimator) # getting the missing performance dates for the estimator
+            Returns:
+                None
+            """
+            data = self.modelDB.get_model_predictions(estimator).sort_values(by="date", ascending=True).dropna() # getting the predictions from the database in order to use iloc
+            missing_dates = self.modelDB.get_missing_dates_performance(estimator) # getting the missing performance dates for the estimator
+            date_range = np.ravel(missing_dates[missing_dates["date"] >= data["date"].iloc[149]].values) # getting the missing dates that are after the date150
 
-        date150 = data["date"].iloc[149] # getting the date that thresholds the first 150 days
-        date_range = np.ravel(missing_dates[missing_dates["date"] >= date150].values) # getting the missing dates that are after the date150
+            for d in date_range:   # rolling window for the days after 150th day
+                current_date = datetime.strptime(d, DATE_FORMAT)
 
-        for d in date_range:   # rolling window for the days after 150th day
-            current_date = datetime.strptime(d, DATE_FORMAT)
+                #total
+                batch_total = PerformanceBatch(*self.calculate_performance_metrics(data, 0, current_date)) # calculating the performance metrics for different windows
+                # 7
+                batch_7 = PerformanceBatch(*self.calculate_performance_metrics(data, 7, current_date))
+                # 14
+                batch_14 = PerformanceBatch(*self.calculate_performance_metrics(data, 14, current_date))
+                # 30
+                batch_30 = PerformanceBatch(*self.calculate_performance_metrics(data, 30, current_date))
 
-            #total
-            batch_total = PerformanceBatch(*self.calculate_performance_metrics(data, 0, current_date)) # calculating the performance metrics for the total period
-            # 7
-            batch_7 = PerformanceBatch(*self.calculate_performance_metrics(data, 7, current_date)) # calculating the performance metrics for the last 7 days
-            # 14
-            batch_14 = PerformanceBatch(*self.calculate_performance_metrics(data, 14, current_date)) # calculating the performance metrics for the last 14 days
-            # 30
-            batch_30 = PerformanceBatch(*self.calculate_performance_metrics(data, 30, current_date)) # calculating the performance metrics for the last 30 days
-
-            # creating the PerformanceWindows object
-            self.modelDB.insert_model_performance(PerformanceWindows(estimator, d, batch_total, batch_7, batch_14, batch_30))  # adding the performance to the database
+                # creating the PerformanceWindows object
+                self.modelDB.insert_model_performance(PerformanceWindows(estimator, d, batch_total, batch_7, batch_14, batch_30))  # adding the performance to the database
 
 
 
