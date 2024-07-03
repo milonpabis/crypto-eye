@@ -1,13 +1,14 @@
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, AdaBoostClassifier
-from sklearn.metrics import recall_score, precision_score, accuracy_score, ne
+from sklearn.metrics import recall_score, precision_score, accuracy_score
 import yfinance as yf
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 
 from feature_generator.FeatureGenerator import FeatureGenerator
 from model_tracking.DataBaseLogs import DBLogs
+from model_tracking.performance_data import PerformanceBatch, PerformanceWindows
 
 DEBUG = False
 DATE_FORMAT = r"%Y-%m-%d"
@@ -63,6 +64,13 @@ class EstimatorsBTC:
             self.fill_real_predictions(start_date=None, end_date=None)
 
 
+    def get_prediction_today(self) -> dict:
+        """
+        Returns the predictions for today.
+        """
+        return self.modelDB.get_predictions_today()
+
+
 
     def predict_today(self) -> dict:
         """
@@ -77,33 +85,6 @@ class EstimatorsBTC:
 
 
     
-    def update_predictions(self, days_back: int = 150) -> None:
-        """
-        Updates the missing prediction values for the estimators for the last 150 days.
-        Checks on which days the predictions are missing and performs the backtesting evaluation.
-
-        This method should be called only in order to keep the prediction values updated.
-        
-        !WARNING!
-        It may take a long time to run, depending on the number of days to be evaluated.
-        """
-        
-        today = datetime.now().strftime(DATE_FORMAT)
-        today_nback = (datetime.now() - timedelta(days=days_back)).strftime(DATE_FORMAT)    # date days_back ago
-
-        missing_dates = self.modelDB.get_missing_dates_predictions(today_nback, today)  # getting the missing prediction dates for the last days_back days
-        
-        for date in missing_dates:  # for every of these dates, make a prediction and store it in the database
-            print(f"""Evaluating date: {date}""")
-            self.__initialize_estimators(max_date=date)   # gets the data for historical dates and fits the estimators
-            res = self.predict_today()  # predicts for self.Xtoday
-            for est in res:
-                self.modelDB.insert_model_prediction(est, date, res[est])   # for every estimator in res(dict), insert into the db
-
-        self.fill_real_predictions(start_date=None, end_date=None)  # fills all the missing real values that are available in the database and yahoo finance
-
-
-    
     def update_performance(self, estimator: str) -> None:
         data = self.modelDB.get_model_predictions(estimator) # getting the predictions from the database
 
@@ -115,50 +96,55 @@ class EstimatorsBTC:
         date150 = data["date"].iloc[149] # getting the date that thresholds the first 150 days
         date_range = np.ravel(missing_dates[missing_dates["date"] >= date150].values) # getting the missing dates that are after the date150
 
-        for d in date_range:   # rolling window
-            values150 = data[data["date"] <= d][["y_true", "y_pred"]].dropna().values # getting the values from before the date d
-            # calculating metrics
-            precision_total = precision_score(values150[:,0], values150[:,1])
-            recall_total = recall_score(values150[:,0], values150[:,1])
-            self.modelDB.insert_model_performance(estimator, d, recall_total, precision_total)  # adding the performance to the database
-
-        for d in self.modelDB.get_null_performance_dates(estimator):
+        for d in date_range:   # rolling window for the days after 150th day
             current_date = datetime.strptime(d, DATE_FORMAT)
 
+            #total
+            batch_total = PerformanceBatch(*self.calculate_performance_metrics(data, 0, current_date)) # calculating the performance metrics for the total period
             # 7
-            ago_7 = str(current_date - timedelta(days=7))
-            values7 = data[(data["date"] <= d) & (data["date"] >= ago_7)][["y_true", "y_pred"]].dropna().values
-            print("f", len(values7))
-            precision_7 = precision_score(values7[:,0], values7[:,1], zero_division=0)
-            recall_7 = recall_score(values7[:,0], values7[:,1])
-
+            batch_7 = PerformanceBatch(*self.calculate_performance_metrics(data, 7, current_date)) # calculating the performance metrics for the last 7 days
             # 14
-            ago_14 = str(current_date - timedelta(days=14))
-            values14 = data[(data["date"] <= d) & (data["date"] >= ago_14)][["y_true", "y_pred"]].dropna().values
-            precision_14 = precision_score(values14[:,0], values14[:,1], zero_division=0)
-            recall_14 = recall_score(values14[:,0], values14[:,1])
-
+            batch_14 = PerformanceBatch(*self.calculate_performance_metrics(data, 14, current_date)) # calculating the performance metrics for the last 14 days
             # 30
-            ago_30 = str(current_date - timedelta(days=30))
-            values30 = data[(data["date"] <= d) & (data["date"] >= ago_30)][["y_true", "y_pred"]].dropna().values
-            precision_30 = precision_score(values30[:,0], values30[:,1], zero_division=0)
-            recall_30 = recall_score(values30[:,0], values30[:,1])
-            
-            print(precision_7)
+            batch_30 = PerformanceBatch(*self.calculate_performance_metrics(data, 30, current_date)) # calculating the performance metrics for the last 30 days
+
+            # creating the PerformanceWindows object
+            self.modelDB.insert_model_performance(PerformanceWindows(estimator, d, batch_total, batch_7, batch_14, batch_30))  # adding the performance to the database
 
 
 
-    def calculate_performance_metrics(self, data: pd.DataFrame, window: int, current_date: datetime) -> list:
+    def calculate_performance_metrics(self, data: pd.DataFrame, window: int, current_date: datetime) -> Tuple[float]:
+        """
+        Calculate performance metrics for a given window of time.
+
+        Parameters:
+            data (pd.DataFrame): The data containing the true and predicted values with "date" column in the format "%Y-%m-%d".
+            window (int): The number of days in the window.
+            current_date (datetime): The current date.
+
+        Returns:
+            Tuple[float]: A tuple containing the calculated performance metrics:
+                - recall: The recall score.
+                - precision: The precision score.
+                - accuracy: The accuracy score.
+                - specificity: The specificity score.
+                - neg_pred_value: The negative predictive value.
+        """
         ago = str(current_date - timedelta(days=window))
-        values = data[(data["date"] <= str(current_date)) & (data["date"] >= ago)][["y_true", "y_pred"]].dropna().values
 
-        precision = precision_score(values[:,0], values[:,1], zero_division=0)
+        if window != 0:         
+            values = data[(data["date"] <= str(current_date)) & (data["date"] >= ago)][["y_true", "y_pred"]].dropna().values
+        else:           # if window == 0, it means that we are calculating the total performance ( no lower window )
+            values = data[(data["date"] <= str(current_date))][["y_true", "y_pred"]].dropna().values
+
         recall = recall_score(values[:,0], values[:,1])
-        accuracy = accuracy_score(values[:,0], values[:,1])
-        specificity = recall_score(values[:,0], values[:,1], pos_label=0)
-        neg_pred_value = precision_score(values[:,0], values[:,1], pos_label=0, zero_division=0)
+        precision = precision_score(values[:,0], values[:,1], zero_division=0)
 
-        return [precision, recall, accuracy, specificity, neg_pred_value]
+        accuracy = accuracy_score(values[:,0], values[:,1])
+        specificity = recall_score(values[:,0], values[:,1], pos_label=0)   # recall for the negative class
+        neg_pred_value = precision_score(values[:,0], values[:,1], pos_label=0, zero_division=0)    # precision for the negative class
+
+        return recall, precision, accuracy, specificity, neg_pred_value
 
 
 
@@ -186,7 +172,30 @@ class EstimatorsBTC:
 
 
 
+    def update_predictions(self, days_back: int = 150) -> None:
+        """
+        Updates the missing prediction values for the estimators for the last 150 days.
+        Checks on which days the predictions are missing and performs the backtesting evaluation.
 
+        This method should be called only in order to keep the prediction values updated.
+        
+        !WARNING!
+        It may take a long time to run, depending on the number of days to be evaluated.
+        """
+        
+        today = datetime.now().strftime(DATE_FORMAT)
+        today_nback = (datetime.now() - timedelta(days=days_back)).strftime(DATE_FORMAT)    # date days_back ago
+
+        missing_dates = self.modelDB.get_missing_dates_predictions(today_nback, today)  # getting the missing prediction dates for the last days_back days
+        
+        for date in missing_dates:  # for every of these dates, make a prediction and store it in the database
+            print(f"""Evaluating date: {date}""")
+            self.__initialize_estimators(max_date=date)   # gets the data for historical dates and fits the estimators
+            res = self.predict_today()  # predicts for self.Xtoday
+            for est in res:
+                self.modelDB.insert_model_prediction(est, date, res[est])   # for every estimator in res(dict), insert into the db
+
+        self.fill_real_predictions(start_date=None, end_date=None)  # fills all the missing real values that are available in the database and yahoo finance
 
 
 

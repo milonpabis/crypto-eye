@@ -57,16 +57,13 @@ class DBLogs:
             print(exception_error)
             return None
         
-
-    def update_model_performance(self, model_name: str, date: str, )
-    
     
 
-    def insert_model_performance(self, model_name: str, date: str, recall: float, precision: float) -> None:
+    def insert_model_performance(self, performance_info: PerformanceWindows) -> None:
         """Inserts the current model performance into the database."""
         try:
-            model_id = self.get_model_id(model_name)
-            self.__insert_performance_id(model_id, date, recall, precision)
+            model_id = self.get_model_id(performance_info.get_estimator())
+            self.__insert_performance_id(model_id, performance_info)
 
         except Exception as exception_error:
             print(exception_error)
@@ -233,12 +230,6 @@ class DBLogs:
         self.cursor.execute("""SELECT EXISTS(SELECT 1 FROM models_predictions WHERE date = ?);""", (date,))
         return self.cursor.fetchone()[0]
     
-
-
-    def get_null_performance_dates(self, estimator: str) -> list:
-        model_id = self.get_model_id(estimator)
-        self.cursor.execute("""SELECT date FROM models_performance WHERE recall_7 = 0.0 AND model_id = ?;""", (model_id,))
-        return list(map(lambda date: date[0], self.cursor.fetchall()))
     
 
 
@@ -251,10 +242,15 @@ class DBLogs:
     
 
 
-    def __insert_performance_id(self, model_id: int, date: str, recall: float, precision: float) -> None:
+    def __insert_performance_id(self, model_id: int, performance_info: PerformanceWindows) -> None:
         self.cursor.execute("""
-            INSERT INTO models_performance (model_id, date, recall_total, precision_total) VALUES (?, ?, ?, ?);""", 
-            (model_id, date, recall, precision))
+            INSERT INTO models_performance (model_id, date, recall_total, precision_total, accuracy_total, specificity_total, neg_pred_value_total,
+                                            recall_7, precision_7, accuracy_7, specificity_7, neg_pred_value_7,
+                                            recall_14, precision_14, accuracy_14, specificity_14, neg_pred_value_14,
+                                            recall_30, precision_30, accuracy_30, specificity_30, neg_pred_value_30) 
+                            
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", 
+            (model_id, performance_info.get_date(), *performance_info.get_data()))
         
         self.conn.commit()
     

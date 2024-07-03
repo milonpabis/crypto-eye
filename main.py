@@ -12,18 +12,12 @@ if __name__ == "__main__":
         print("--------- Loading and preprocessing data ---------")
         start = dt.datetime.now()
         btc = EstimatorsBTC()
-        btc.update_predictions(days_back=250)
-        #fig, ax = plt.subplots()
-        # for model in est:
-            # dat = btc.modelDB.get_model_performance(model)
-            # dat.plot(x="date", y=["recall", "precision"], ax=ax, label=[f"{model} recall", f"{model} precision"])
-        # plt.show()
-        #print(btc.modelDB.get_missing_dates_performance("RandomForest"))
-        btc.update_performance("RandomForest")
-        btc.update_performance("AdaBoost")
-        btc.update_performance("GradientBoost")
+        #btc.update_predictions(days_back=250)
+        #btc.update_performance("RandomForest")
+        #btc.update_performance("AdaBoost")
+        #btc.update_performance("GradientBoost")
 
-        #print(btc.predict_today())
+        print(btc.predict_today())
         end = dt.datetime.now()
         print(f"--------- Time taken: {end-start} ---------")
 

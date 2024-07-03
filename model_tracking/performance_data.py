@@ -19,8 +19,9 @@ class PerformanceBatch:
 class PerformanceWindows:
 
 
-    def __init__(self, estimator: str, batch_total: PerformanceBatch, batch_7: PerformanceBatch, batch_14: PerformanceBatch, batch_30: PerformanceBatch):
+    def __init__(self, estimator: str,  date: str, batch_total: PerformanceBatch, batch_7: PerformanceBatch, batch_14: PerformanceBatch, batch_30: PerformanceBatch):
         self.estimator = estimator
+        self.date = date
         self.batch_total = batch_total
         self.batch_7 = batch_7
         self.batch_14 = batch_14
@@ -32,6 +33,9 @@ class PerformanceWindows:
     
     def get_estimator(self):
         return self.estimator
+    
+    def get_date(self):
+        return self.date
         
 
 
