@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CryptoEye</title>
+    <link rel="stylesheet" href="../static/mainpage.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="main-container">
+
+        
+        <nav>
+            <ul>
+                <li><a href="../models/">Models</a></li>
+                <li><a href=".">Models Performance</a></li>
+                <li><a href="../about/">About</a></li>
+            </ul>
+        </nav>
+        <div class="performance-container">
+            <div>
+                <div class="performance-graph" id="rf_graph">
+                    <script>
+                        var rf_graph = {{ rf_graph | safe }};
+    
+                        Plotly.plot('rf_graph', rf_graph.data, rf_graph.layout);
+                    </script>
+                </div>
+            </div>
+
+            
+
+            <div class="performance-graph" id="ab_graph">
+                <script>
+                    var ab_graph = {{ ab_graph | safe }};
+
+                    Plotly.plot('ab_graph', ab_graph.data, ab_graph.layout);
+                </script>
+            </div>
+
+            <div class="performance-graph" id="gb_graph">
+                <script>
+                    var gb_graph = {{ gb_graph | safe }};
+
+                    Plotly.plot('gb_graph', gb_graph.data, gb_graph.layout);
+                </script>
+            </div>
+
+        </div>
+        
+    </div>
+    <footer id="footer">
+        <p>&copy; 2024 CryptoEye</p>
+    </footer>
+</body>
+</html>

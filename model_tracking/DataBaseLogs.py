@@ -8,10 +8,12 @@ from model_tracking.performance_data import PerformanceWindows, PerformanceBatch
 class DBLogs:
     def __init__(self, db_path: str = "model_tracking\\data\\logs.db"):
         self.db_path = db_path
+
+
+    def connect(self) -> None:
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
         self.create_tables()
-
 
 
     def get_model_predictions(self, model_name: str) -> pd.DataFrame:

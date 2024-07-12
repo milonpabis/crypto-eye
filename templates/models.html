@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CryptoEye</title>
+    <link rel="stylesheet" href="../static/mainpage.css">
+</head>
+<body>
+    <div class="main-container">
+
+        
+        <nav>
+            <ul>
+                <li><a href=".">Models</a></li>
+                <li><a href="../performance/">Models Performance</a></li>
+                <li><a href="../about/">About</a></li>
+            </ul>
+        </nav>
+        <div class="entry-container">
+            <h2>Welcome to CryptoEye</h2>
+            <p>Press the button to predict whether the Bitcoin will grow tomorrow or not!</p>
+            <button id="predict-button">Predict</button>
+        </div>
+        <div class="results-container">
+            <div class="result-item">
+                <h3>Model 1</h3>
+                <img style="width: 30px; height: 30px;" src="../static/images/raise.png" alt="Raise">
+                <h4>Model precision</h4>
+                <p>0.8</p>
+            </div>
+            <div class="result-item">
+                <h3>Model 1</h3>
+                <img style="width: 30px; height: 30px;" src="../static/images/drop.png" alt="Raise">
+                <h4>Model precision</h4>
+                <p>0.8</p>
+            </div>
+            <div class="result-item">
+                <h3>Model 1</h3>
+                <img style="width: 30px; height: 30px;" src="../static/images/raise.png" alt="Raise">
+                <h4>Model precision</h4>
+                <p>0.8</p>
+            </div>
+        </div>
+    </div>
+    <footer id="footer">
+        <p>&copy; 2024 CryptoEye</p>
+    </footer>
+</body>
+</html>
+
+
+<script>
+    document.getElementById('predict-button').addEventListener('click', function() {
+        document.getElementsByClassName('results-container')[0].style.display = 'flex';
+        document.getElementById('footer').style.marginTop = 0;
+    });
+</script>

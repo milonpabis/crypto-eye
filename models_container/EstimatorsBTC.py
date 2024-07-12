@@ -25,6 +25,7 @@ class EstimatorsBTC:
         self.Xtoday: np.ndarray
 
         self.modelDB = DBLogs()
+        self.connect()
 
         self.features = ["RSI5", "RSI7", "RSI14", "RSI20", "CCI3", "CCI5", "CCI7", "CCI14", "CCI20", "SOMA37", "SOMA314", "MACD"]
         
@@ -62,6 +63,8 @@ class EstimatorsBTC:
                 for est in res:
                     self.modelDB.insert_model_prediction(est, datetime.now().strftime(DATE_FORMAT), res[est])
             self.fill_real_predictions(start_date=None, end_date=None)
+            for est in self.estimators.keys():
+                self.update_performance(est)
 
 
     def get_prediction_today(self) -> dict:
@@ -250,6 +253,14 @@ class EstimatorsBTC:
         """
         for est in self.estimators:
             self.estimators[est]["estimator"].fit(self.X, self.y)
+
+
+    def connect(self) -> None:
+        self.modelDB.connect()
+
+
+    def close(self) -> None:
+        self.modelDB.close()    # closes the database connection
 
         
             
