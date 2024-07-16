@@ -82,5 +82,22 @@ a {
 
 .performance-container {
     width: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: black;
+}
+
+.performance-graph {
+    border: 1px solid red;
+    margin: 10px;
+}
+
+#window-selector {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
 }
 
