@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>CryptoEye</title>
-    <link rel="stylesheet" href="../static/mainpage.css">
+    <link rel="stylesheet" href="../static/styles/mainpage.css">
 </head>
 <body>
     <div class="main-container">
@@ -10,14 +10,14 @@
         
         <nav>
             <ul>
-                <li><a href=".">Models</a></li>
-                <li><a href="../performance/30/">Models Performance</a></li>
-                <li><a href="../about/">About</a></li>
+                <li><a href=".">Get Predictions</a></li>
+                <li><a href="./performance/total/">Models Performance</a></li>
+                <li><a href="./about/">About</a></li>
             </ul>
         </nav>
         <div class="entry-container">
-            <h2>Welcome to CryptoEye</h2>
-            <p>Press the button to predict whether the Bitcoin will grow tomorrow or not!</p>
+            <h2>Welcome to <span style="color: rgba(141, 145, 26, 0.558);">CryptoEye</span></h2>
+            <p>Press the button to predict whether the <span style="font-weight: bold;">Bitcoin</span> will grow tomorrow or not!</p>
             <button id="predict-button">Predict</button>
         </div>
         <div class="results-container">
@@ -25,37 +25,31 @@
                 <h3>RandomForest</h3>
 
                 {% if rf_pred == 1 %}
-                    <img style="width: 30px; height: 30px;" src="../static/images/raise.png" alt="Raise">
+                    <img class="result-img" src="../static/images/raise.png" alt="Raise">
                 {% else %}
-                    <img style="width: 30px; height: 30px;" src="../static/images/drop.png" alt="Drop">
+                    <img class="result-img" src="../static/images/drop.png" alt="Drop">
                 {% endif %}
                 
-                <h4>Model precision</h4>
-                <p>0.69</p>
             </div>
             <div class="result-item">
                 <h3>GradientBoost</h3>
 
                 {% if gb_pred == 1 %}
-                    <img style="width: 30px; height: 30px;" src="../static/images/raise.png" alt="Raise">
+                    <img class="result-img" src="../static/images/raise.png" alt="Raise">
                 {% else %}
-                    <img style="width: 30px; height: 30px;" src="../static/images/drop.png" alt="Drop">
+                    <img class="result-img" src="../static/images/drop.png" alt="Drop">
                 {% endif %}
 
-                <h4>Model precision</h4>
-                <p>0.8</p>
             </div>
             <div class="result-item">
                 <h3>AdaBoost</h3>
 
                 {% if ab_pred == 1 %}
-                    <img style="width: 30px; height: 30px;" src="../static/images/raise.png" alt="Raise">
+                    <img class="result-img" src="../static/images/raise.png" alt="Raise">
                 {% else %}
-                    <img style="width: 30px; height: 30px;" src="../static/images/drop.png" alt="Drop">
+                    <img class="result-img" src="../static/images/drop.png" alt="Drop">
                 {% endif %}
 
-                <h4>Model precision</h4>
-                <p>0.8</p>
             </div>
         </div>
     </div>

@@ -57,13 +57,17 @@ class EstimatorsBTC:
 
         if not DEBUG:
             today_date = datetime.now().strftime(DATE_FORMAT)
-            if not self.modelDB.does_prediction_exists(today_date):
+
+            if not self.modelDB.does_prediction_exists(today_date): # if the prediction for today does not exist, make a prediction
                 self.__initialize_estimators()
                 res = self.predict_today()
+
                 for est in res:
                     self.modelDB.insert_model_prediction(est, datetime.now().strftime(DATE_FORMAT), res[est])
-            self.fill_real_predictions(start_date=None, end_date=None)
-            for est in self.estimators.keys():
+            
+            self.fill_real_predictions(start_date=None, end_date=None)  # always fill the real missing values
+
+            for est in self.estimators.keys():  # update the performance for the estimators
                 self.update_performance(est)
 
 
@@ -74,7 +78,6 @@ class EstimatorsBTC:
         today = str(datetime.now().strftime(DATE_FORMAT))
 
         return {est: self.modelDB.get_model_prediction_date(est, today) for est in self.estimators} # dictionary with the predictions for today
-
 
 
     def predict_today(self) -> dict:

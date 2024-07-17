@@ -105,7 +105,7 @@ class GraphBTC:
     def add_title(self) -> None:
         self.annotations.append(dict(xref='paper', yref='paper', x=0.0, y=1.05,
                                     xanchor='left', yanchor='bottom',
-                                    text=self.label.capitalize(),
+                                    text=self.label,
                                     font=dict(family='Arial',
                                                 size=30,
                                                 color='rgb(37,37,37)'),

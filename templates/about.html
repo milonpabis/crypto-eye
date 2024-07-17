@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>CryptoEye</title>
-    <link rel="stylesheet" href="../static/mainpage.css">
+    <link rel="stylesheet" href="../static/styles/mainpage.css">
 </head>
 <body>
     <div class="main-container">
@@ -10,36 +10,35 @@
         
         <nav>
             <ul>
-                <li><a href="../models/">Models</a></li>
-                <li><a href="../performance">Models Performance</a></li>
+                <li><a href="../">Get Predictions</a></li>
+                <li><a href="../performance/total/">Models Performance</a></li>
                 <li><a href=".">About</a></li>
             </ul>
         </nav>
-        <div class="entry-container">
-            <h2>Welcome to CryptoEye</h2>
-            <p>Press the button to predict whether the Bitcoin will grow tomorrow or not!</p>
-            <button id="predict-button">Predict</button>
+        <div class="about-container">
+            <h2 style="color: darkred;">About</h2>
+            <p>The main goal of the models is to predict whether the <span>Bitcoin</span> price will raise or not.</p>
+            <p>Models are ready to use, storing the historcal performance based on their predictions.</p>
+            <p>The implementation is flexible, allowing to add other models if needed.</p>
+            <p><span style="font-weight: bold;">Remember!</span> We are talking about the prices at the beggining of the day!</p>
         </div>
-        <div class="results-container">
-            <div class="result-item">
-                <h3>Model 1</h3>
-                <img style="width: 30px; height: 30px;" src="../static/images/raise.png" alt="Raise">
-                <h4>Model precision</h4>
-                <p>0.8</p>
-            </div>
-            <div class="result-item">
-                <h3>Model 1</h3>
-                <img style="width: 30px; height: 30px;" src="../static/images/drop.png" alt="Raise">
-                <h4>Model precision</h4>
-                <p>0.8</p>
-            </div>
-            <div class="result-item">
-                <h3>Model 1</h3>
-                <img style="width: 30px; height: 30px;" src="../static/images/raise.png" alt="Raise">
-                <h4>Model precision</h4>
-                <p>0.8</p>
-            </div>
+        <div class="about-container">
+            <h2 style="color: darkorchid;">Models</h2>
+            <p>So far, three models are trained and implemented in the app:</p>
+            <p style="font-weight: bold; font-size: 24px;">RandomForest</p>
+            <p style="font-weight: bold; font-size: 24px;">AdaBoost</p>
+            <p style="font-weight: bold; font-size: 24px;">GradientBoost</p>
+            <p>They are retrained every time the server is started with the same hyperparameters.</p>
+            <p>You should consider looking at the performance tab, to decide whether they are trustworthy at the time.</p>
         </div>
+        <div class="about-container">
+            <h2 style="color: darkolivegreen;">Metrics</h2>
+            <p>The performance tab comes with the historical and actual performance of the models. It contains metrics:</p>
+            <p><span style="font-weight: bold;">Precision</span> - Percentage of correct growth prediction compared to the situations, where the stock price dropped, but the model said it will grow.</p>
+            <p><span style="font-weight: bold;">Recall</span> - Percentage of missed growth opportunities.</p>
+            <p>There are more historical metrics stored, however these two are the most crucial, however there is always a place to implement them in the app.</p>
+        </div>
+        
     </div>
     <footer id="footer">
         <p>&copy; 2024 CryptoEye</p>

@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>CryptoEye</title>
-    <link rel="stylesheet" href="../../static/mainpage.css">
+    <link rel="stylesheet" href="../../static/styles/mainpage.css">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -12,7 +12,7 @@
         
         <nav>
             <ul>
-                <li><a href="../../models/">Models</a></li>
+                <li><a href="../../">Get Predictions</a></li>
                 <li><a href=".">Models Performance</a></li>
                 <li><a href="../../about/">About</a></li>
             </ul>
@@ -20,10 +20,10 @@
 
         <div id="window-selector">
             <button id="total-btn" class="window-btn" onclick="loadpage('total')">Total</button>
-            <button id="7d-btn" class="window-btn" onclick="loadpage('7')">7 Days</button>
-            <button id="14d-btn" class="window-btn" onclick="loadpage('14')">14 Days</button>
             <button id="30d-btn" class="window-btn" onclick="loadpage('30')">30 Days</button>
-
+            <button id="14d-btn" class="window-btn" onclick="loadpage('14')">14 Days</button>
+            <button id="7d-btn" class="window-btn" onclick="loadpage('7')">7 Days</button>
+            
             <script>
                 function loadpage(path) {
                     let baseUrl = window.location.protocol + "//" + window.location.host;
